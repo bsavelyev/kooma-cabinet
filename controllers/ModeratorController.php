@@ -2,10 +2,9 @@
 
 namespace app\controllers;
 
-use app\helpers\ExcelParser;
-use app\helpers\QiwiServiceSaver;
-use app\helpers\ServiceSaver;
 use app\models\ServiceModel;
+use app\services\QiwiImportService;
+use app\services\WooppayImportService;
 use app\models\ServiceProviderFieldsModel;
 use app\models\ServiceProviderFieldsValidationModel;
 use app\models\ServiceProviderModel;
@@ -26,6 +25,10 @@ class ModeratorController extends Controller
     private $serviceCatalogService;
     /** @var ServiceProviderFieldsRepository */
     private $fieldsRepository;
+    /** @var WooppayImportService */
+    private $wooppayImportService;
+    /** @var QiwiImportService */
+    private $qiwiImportService;
 
     public function __construct(
         $id,
@@ -33,11 +36,15 @@ class ModeratorController extends Controller
         $config,
         ServiceProviderService $serviceProviderService,
         ServiceCatalogService $serviceCatalogService,
-        ServiceProviderFieldsRepository $fieldsRepository
+        ServiceProviderFieldsRepository $fieldsRepository,
+        WooppayImportService $wooppayImportService,
+        QiwiImportService $qiwiImportService
     ) {
         $this->serviceProviderService = $serviceProviderService;
         $this->serviceCatalogService = $serviceCatalogService;
         $this->fieldsRepository = $fieldsRepository;
+        $this->wooppayImportService = $wooppayImportService;
+        $this->qiwiImportService = $qiwiImportService;
         parent::__construct($id, $module, $config);
     }
 
@@ -92,7 +99,7 @@ class ModeratorController extends Controller
 
         if ($model->load(\Yii::$app->request->post()) && $model->validate()) {
             try {
-                $serviceNames = ServiceSaver::saveService($model->services_ids, $model->user_id);
+                $serviceNames = $this->wooppayImportService->import($model->services_ids, (int) $model->user_id);
                 \Yii::$app->session->setFlash('success', implode('<br>', $serviceNames));
 
                 return $this->redirect(['moderator/index']);
@@ -122,19 +129,12 @@ class ModeratorController extends Controller
                     $filePath = sys_get_temp_dir().DIRECTORY_SEPARATOR.$model->file->baseName.'.'.$model->file->extension;
                     $model->file->saveAs($filePath);
 
-                    $parser = new ExcelParser();
-
                     try {
-                        //                        $parsedData = $parser->parseExcel($filePath);
-                        $serviceNames = QiwiServiceSaver::saveService($model->user_id, $filePath);
+                        $serviceNames = $this->qiwiImportService->importFromFile((int) $model->user_id, $filePath);
                         \Yii::$app->session->setFlash('success', implode('<br>', $serviceNames));
 
                         return $this->redirect(['moderator/index']);
                     } catch (\Exception $e) {
-                        if ($filePath && file_exists($filePath)) {
-                            unlink($filePath);
-                        }
-
                         \Yii::$app->session->setFlash('error', 'Ошибка при парсинге файла: '.$e->getMessage());
                     }
                 }
