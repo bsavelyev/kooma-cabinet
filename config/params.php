@@ -1,0 +1,22 @@
+<?php
+
+return [
+    'adminEmail' => 'admin@example.com',
+    'senderEmail' => 'noreply@example.com',
+    'senderName' => 'Example.com mailer',
+    'replenishmentService' => 'replenishment',
+    'dischargeService' => 'discharge',
+    'username' => '77751234567',
+    'wooppayUrl' => YII_ENV_PROD ? 'https://api-core.wooppay.com/v1/' : 'https://api-core.dev.wooppay.com/v1/',
+    'payment_service' => [
+        'qiwi' => [
+            'baseUrl' => 'https://xml1.qiwi.com/xmlgate/xml.jsp',
+            'login' => 'test login',
+            'signAlg' => 'MD5',
+            'sign' => 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+            'terminal' => '122345678',
+            'log' => true,
+            'koomaID' => YII_ENV_PROD ? 1 : 2,
+        ],
+    ],
+];

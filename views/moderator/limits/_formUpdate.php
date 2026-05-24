@@ -1,0 +1,39 @@
+<?php
+
+use app\models\LimitPeriodModel;
+use app\models\LimitValueTypeModel;
+use app\models\ServiceModel;
+use yii\bootstrap5\Html;
+use yii\bootstrap5\ActiveForm;
+use yii\helpers\ArrayHelper;
+use yii\widgets\Pjax;
+
+Pjax::begin();
+$form = ActiveForm::begin([
+    'id' => 'update-form',
+    'enableAjaxValidation' => false,
+    'options' => ['data' => ['pjax' => true]],
+]);
+
+echo $form->field($model, 'period')->textInput(['autofocus' => true])
+    ->textInput(['autofocus' => true])->dropDownList(ArrayHelper::map(LimitPeriodModel::find()->asArray()->all(), 'code', 'name'));
+
+echo $form->field($model, 'value');
+
+echo $form->field($model, 'value_type')
+    ->textInput(['autofocus' => true])->dropDownList(ArrayHelper::map(LimitValueTypeModel::find()->asArray()->all(), 'code', 'name'));
+
+echo $form->field($model, 'service_id')->textInput(['autofocus' => true])
+    ->textInput(['autofocus' => true])->dropDownList(ArrayHelper::map(ServiceModel::find()->asArray()->all(), 'id', 'system_name'));
+;
+
+?>
+
+<div class="form-group">
+    <button type="button" class="btn btn-default"
+            data-dismiss="modal"><?= Yii::t('cabinet', 'close') ?></button>
+    <?= Html::submitButton(Yii::t('cabinet', 'save'), ['class' => 'btn btn-primary', 'name' => 'contact-button']) ?>
+</div>
+
+<?php ActiveForm::end(); ?>
+<?php Pjax::end(); ?>

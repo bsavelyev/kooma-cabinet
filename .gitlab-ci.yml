@@ -1,0 +1,23 @@
+stages:
+  - deploy
+
+deploy_test:
+  tags:
+    - kooma
+  stage: deploy
+  script:
+    - >
+      ssh -tt app "sudo ./cabinet-update.sh"
+  only:
+    - main
+
+deploy_prod:
+  tags:
+    - koomaprod
+  stage: deploy
+  script:
+    - >
+      ssh -tt web "sudo ./update_cabinet.sh $CI_COMMIT_TAG"
+  only:
+    - tags
+  when: manual
