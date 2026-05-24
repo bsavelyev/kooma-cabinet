@@ -165,7 +165,7 @@ class AdminController extends Controller
         $model = $permissionData['form'];
 
         if ($model->load(Yii::$app->request->post()) && $model->validate()) {
-            $children = is_array($model->child) ? $model->child : [];
+            $children = $model->child;
             $this->rbacService->saveRolePermissions($name, $children);
             $this->setSuccessFlash();
 

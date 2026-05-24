@@ -37,7 +37,9 @@ class FinancierService
         $model->type_id = $type;
         $model->descr = $descr;
         $model->service_id = ServiceModel::findOne(['system_name' => $serviceName])->id;
-        $model->sender_id = Yii::$app->user->identity->username;
+        /** @var User|null $identity */
+        $identity = Yii::$app->user->identity;
+        $model->sender_id = $identity !== null ? $identity->username : '';
         $model->payment_account = User::findOne(['id' => $userId])->username;
 
         return $this->repository->createOperation($model);

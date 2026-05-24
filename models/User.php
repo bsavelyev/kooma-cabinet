@@ -11,6 +11,7 @@ use yii\web\IdentityInterface;
 /**
  * User model
  *
+ * @property int $id
  * @property string $username
  * @property string $password_hash
  * @property integer $status

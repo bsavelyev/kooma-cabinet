@@ -7,11 +7,11 @@ use yii\db\ActiveRecord;
 /**
  * Limits Payment Account Model
  *
- * @property integer id
- * @property integer period
- * @property integer value
- * @property integer value_type
- * @property integer merchant_id
+ * @property int $id
+ * @property int $period
+ * @property int $value
+ * @property int $value_type
+ * @property int $merchant_id
  */
 class LimitsPaymentAccountByMerchantModel extends ActiveRecord
 {

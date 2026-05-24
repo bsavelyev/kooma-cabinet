@@ -9,7 +9,7 @@ use yii\db\ActiveRecord;
  * This is the model class for table "kooma.operation".
  *
  * @property string $id
- * @property int $sender_id
+ * @property int|string $sender_id
  * @property int $receiver_id
  * @property int $status
  * @property string $from_create_date

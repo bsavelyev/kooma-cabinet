@@ -5,6 +5,16 @@ namespace app\models;
 use yii\data\ActiveDataProvider;
 use yii\db\ActiveRecord;
 
+/**
+ * @property int $id
+ * @property int $service_id
+ * @property int $provider_id
+ * @property int $status
+ * @property string|null $descr
+ * @property string|null $external_service_id
+ * @property string|null $create_date
+ * @property string|null $status_change_date
+ */
 class ServiceProviderModel extends ActiveRecord
 {
     // Виртуальные свойства для поиска

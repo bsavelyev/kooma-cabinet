@@ -3,6 +3,7 @@
 namespace app\controllers;
 
 use app\models\Account;
+use app\models\forms\ChangeOperationsStatusForm;
 use app\models\forms\OperationForm;
 use app\models\OperationModel;
 use app\models\OperationStatusHistoryModel;
@@ -12,7 +13,6 @@ use app\repositories\OperationRepository;
 use app\services\ExportService;
 use app\services\FinancierService;
 use app\services\OperationStatusService;
-use yii\base\DynamicModel;
 use yii\data\ActiveDataProvider;
 use yii\db\Query;
 use yii\filters\AccessControl;
@@ -131,9 +131,7 @@ class FinancierController extends Controller
 
     public function actionChangeStatusOfSeveralOperations()
     {
-        $model = new DynamicModel(['operations_ids']);
-        $model->addRule(['operations_ids'], 'required');
-        $model->addRule(['operations_ids'], 'string');
+        $model = new ChangeOperationsStatusForm();
 
         if (!\Yii::$app->request->isPost) {
             return $this->renderAjax('operation/_change', ['model' => $model]);

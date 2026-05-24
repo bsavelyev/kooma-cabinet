@@ -4,6 +4,11 @@ namespace app\models;
 
 use yii\db\ActiveRecord;
 
+/**
+ * @property string $item_name
+ * @property int $user_id
+ * @property int|null $created_at
+ */
 class AssignmentModel extends ActiveRecord
 {
     public static function tableName(): string

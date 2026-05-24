@@ -68,7 +68,9 @@
     "post-create-project-cmd": [
       "yii\\composer\\Installer::postCreateProject",
       "yii\\composer\\Installer::postInstall"
-    ]
+    ],
+    "phpstan": "phpstan analyse -c phpstan.neon.dist",
+    "phpstan:baseline": "phpstan analyse -c phpstan.neon.dist --generate-baseline=phpstan-baseline.neon"
   },
   "extra": {
     "yii\\composer\\Installer::postCreateProject": {

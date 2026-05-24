@@ -3,7 +3,7 @@
 namespace app\controllers;
 
 use app\models\LimitsPaymentAccountByMerchantModel;
-use Exception;
+use yii\db\Exception;
 use Yii;
 use yii\data\ActiveDataProvider;
 use yii\filters\AccessControl;

@@ -5,18 +5,16 @@ namespace app\models;
 use yii\db\ActiveRecord;
 use yii\db\Expression;
 use yii\db\Query;
-use yii\jui\DatePicker;
-
 /**
  * Service model.
  *
- * @property int        $id
- * @property string     $system_name
- * @property string     $user_name
- * @property int        $status
- * @property string     $icon
- * @property DatePicker $create_date
- * @property DatePicker $status_change_date
+ * @property int         $id
+ * @property string      $system_name
+ * @property string      $user_name
+ * @property int         $status
+ * @property string      $icon
+ * @property string|null $create_date
+ * @property string|null $status_change_date
  */
 class ServiceModel extends ActiveRecord
 {

@@ -7,6 +7,20 @@ use yii\db\ActiveRecord;
 use yii\db\Expression;
 use yii\db\Query;
 
+/**
+ * @property int|null $id
+ * @property int|null $service_id
+ * @property int|null $provider_id
+ * @property int|null $agent_id
+ * @property float|null $value
+ * @property int|null $value_type
+ * @property int|null $type_id
+ * @property mixed $start_date
+ * @property mixed $end_date
+ * @property float|null $min_value
+ * @property float|null $max_value
+ * @property int|null $status
+ */
 class FeesModel extends ActiveRecord
 {
     // Виртуальные свойства для поиска

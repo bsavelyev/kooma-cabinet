@@ -12,11 +12,11 @@ use function PHPUnit\Framework\isEmpty;
 /**
  * Limits Payment Account Model
  *
- * @property integer id
- * @property integer period
- * @property integer value
- * @property integer value_type
- * @property integer service_id
+ * @property int $id
+ * @property int $period
+ * @property int $value
+ * @property int $value_type
+ * @property int $service_id
  */
 class LimitsPaymentAccountModel extends ActiveRecord
 {

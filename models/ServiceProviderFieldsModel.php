@@ -7,8 +7,8 @@ use yii\db\ActiveRecord;
 /**
  * ServiceProviderFields model
  *
- * @property integer $id
- * @property integer $system_provider_id
+ * @property int $id
+ * @property int $service_provider_id
  * @property string $name
  * @property integer $type
  * @property string $descr

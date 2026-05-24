@@ -2,6 +2,8 @@
 
 namespace app\controllers;
 
+use app\models\forms\ServiceGrabberForm;
+use app\models\forms\ServiceGrabberQiwiForm;
 use app\models\ServiceModel;
 use app\services\QiwiImportService;
 use app\services\WooppayImportService;
@@ -11,7 +13,6 @@ use app\models\ServiceProviderModel;
 use app\repositories\ServiceProviderFieldsRepository;
 use app\services\ServiceCatalogService;
 use app\services\ServiceProviderService;
-use yii\base\DynamicModel;
 use yii\data\ActiveDataProvider;
 use yii\filters\AccessControl;
 use yii\web\Controller;
@@ -89,10 +90,7 @@ class ModeratorController extends Controller
 
     public function actionServiceGrabber()
     {
-        $model = new DynamicModel();
-        $model->addRule(['services_ids', 'user_id'], 'required');
-        $model->addRule(['services_ids'], 'string');
-        $model->addRule(['user_id'], 'integer');
+        $model = new ServiceGrabberForm();
         if (!\Yii::$app->request->post()) {
             return $this->renderAjax('service/_formGrabber', ['model' => $model]);
         }
@@ -104,7 +102,7 @@ class ModeratorController extends Controller
 
                 return $this->redirect(['moderator/index']);
             } catch (\Exception $e) {
-                \Yii::$app->session->setFlash('error', $e->getMessage() ?? 'error');
+                \Yii::$app->session->setFlash('error', $e->getMessage());
 
                 return $this->redirect(['moderator/index']);
             }
@@ -115,9 +113,7 @@ class ModeratorController extends Controller
 
     public function actionServiceGrabberQiwi()
     {
-        $model = new DynamicModel(['file']);
-        $model->addRule(['user_id'], 'integer');
-        $model->addRule(['file'], 'file', ['extensions' => 'xlsx']);
+        $model = new ServiceGrabberQiwiForm();
         if (!\Yii::$app->request->post()) {
             return $this->renderAjax('service/_formGrabberQiwi', ['model' => $model]);
         }
@@ -139,7 +135,7 @@ class ModeratorController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                \Yii::$app->session->setFlash('error', $e->getMessage() ?? 'error');
+                \Yii::$app->session->setFlash('error', $e->getMessage());
 
                 return $this->redirect(['moderator/index']);
             }

@@ -35,7 +35,7 @@ class OperationStatusService
                 continue;
             }
             try {
-                $status = $this->operationRepository->changeStatus($operation->id);
+                $status = $this->operationRepository->changeStatus((int) $operation->id);
                 $result[] = sprintf('%s - %s', $extId, $status > 0 ? 'Success' : $status);
             } catch (\Throwable $e) {
                 $result[] = sprintf('%s - %s', $extId, 'Ошибка');

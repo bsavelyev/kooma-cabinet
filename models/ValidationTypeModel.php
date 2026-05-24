@@ -7,9 +7,9 @@ use yii\db\ActiveRecord;
 /**
  * Limit Period model
  *
- * @property integer code
- * @property string name
- * @property string descr
+ * @property int $code
+ * @property string $name
+ * @property string $descr
  */
 class ValidationTypeModel extends ActiveRecord
 {
