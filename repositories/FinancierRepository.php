@@ -6,13 +6,21 @@ use app\models\OperationModel;
 
 class FinancierRepository
 {
+    /** @var OperationRepository */
+    private $operationRepository;
+
+    public function __construct(OperationRepository $operationRepository)
+    {
+        $this->operationRepository = $operationRepository;
+    }
+
     /**
      * @param OperationModel $model
-     * @return int|bool
+     * @return int
      */
     public function createOperation(OperationModel $model)
     {
-        return OperationModel::createOperation(
+        return $this->operationRepository->create(
             $model->sender_id,
             $model->payment_account,
             $model->service_id,

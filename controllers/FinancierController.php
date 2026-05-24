@@ -6,6 +6,8 @@ use app\models\Account;
 use app\models\forms\OperationForm;
 use app\models\OperationModel;
 use app\models\OperationStatusHistoryModel;
+use app\models\search\OperationSearch;
+use app\models\search\OperationStatusHistorySearch;
 use app\repositories\OperationRepository;
 use app\services\ExportService;
 use app\services\FinancierService;
@@ -34,6 +36,12 @@ class FinancierController extends Controller
     /** @var OperationRepository */
     private $operationRepository;
 
+    /** @var OperationSearch */
+    private $operationSearch;
+
+    /** @var OperationStatusHistorySearch */
+    private $historySearch;
+
     public function __construct(
         $id,
         $module,
@@ -41,12 +49,16 @@ class FinancierController extends Controller
         FinancierService $financierService,
         ExportService $exportService,
         OperationStatusService $operationStatusService,
-        OperationRepository $operationRepository
+        OperationRepository $operationRepository,
+        OperationSearch $operationSearch,
+        OperationStatusHistorySearch $historySearch
     ) {
         $this->service = $financierService;
         $this->exportService = $exportService;
         $this->operationStatusService = $operationStatusService;
         $this->operationRepository = $operationRepository;
+        $this->operationSearch = $operationSearch;
+        $this->historySearch = $historySearch;
         parent::__construct($id, $module, $config);
     }
 
@@ -73,11 +85,11 @@ class FinancierController extends Controller
     public function actionOperation()
     {
         $model = new OperationForm();
-        $query = OperationModel::getQuery();
+        $query = $this->operationSearch->baseQuery();
 
         if (\Yii::$app->request->isPost) {
             if ($model->load(\Yii::$app->request->post()) && $model->validate()) {
-                $query = (new OperationModel())->search($model->attributes);
+                $query = $this->operationSearch->buildQuery($model->attributes);
             }
         }
 
@@ -97,7 +109,7 @@ class FinancierController extends Controller
         if (\Yii::$app->request->isPost) {
             $post = \Yii::$app->request->post('OperationStatusHistoryModel', []);
             if ($model->load(['OperationStatusHistoryModel' => $post]) && $model->validate()) {
-                $query = $model->search($post);
+                $query = $this->historySearch->buildQuery($post);
             }
         }
 
@@ -218,10 +230,10 @@ class FinancierController extends Controller
     public function actionExport($format)
     {
         $model = new OperationForm();
-        $query = OperationModel::getQuery();
+        $query = $this->operationSearch->baseQuery();
 
         if (\Yii::$app->request->isPost && $model->load(\Yii::$app->request->post()) && $model->validate()) {
-            $query = (new OperationModel())->search($model->attributes);
+            $query = $this->operationSearch->buildQuery($model->attributes);
         }
 
         $dataProvider = new ActiveDataProvider([

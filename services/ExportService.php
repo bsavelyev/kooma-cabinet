@@ -2,6 +2,7 @@
 
 namespace app\services;
 
+use app\helpers\OperationServiceConfig;
 use DateTime;
 use DateTimeZone;
 use Exception;
@@ -35,7 +36,7 @@ class ExportService
             $date->setTimezone(new DateTimeZone('Asia/Almaty'));
             $formattedDate = $date->format('d.m.Y H:i');
 
-            $type = in_array($data->service_id, [51, 52, 53]) ? 'UL' : 'FL';
+            $type = OperationServiceConfig::isUlServiceId($data->service_id) ? 'UL' : 'FL';
 
             $sheet->setCellValue('A' . $row, $data->ext_id);
             $sheet->setCellValue('B' . $row, $formattedDate);
