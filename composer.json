@@ -70,7 +70,10 @@
       "yii\\composer\\Installer::postInstall"
     ],
     "phpstan": "phpstan analyse -c phpstan.neon.dist",
-    "phpstan:baseline": "phpstan analyse -c phpstan.neon.dist --generate-baseline=phpstan-baseline.neon"
+    "phpstan:baseline": "phpstan analyse -c phpstan.neon.dist --generate-baseline=phpstan-baseline.neon",
+    "test": "codecept run unit --grep \"DateTimeHelper|OperationServiceConfig|ChangeOperationsStatus|OperationStatusService|ServiceImportMessage\"",
+    "test:unit": "@test",
+    "test:unit:all": "codecept run unit"
   },
   "extra": {
     "yii\\composer\\Installer::postCreateProject": {
