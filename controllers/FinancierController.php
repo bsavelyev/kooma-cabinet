@@ -6,27 +6,47 @@ use app\models\Account;
 use app\models\forms\OperationForm;
 use app\models\OperationModel;
 use app\models\OperationStatusHistoryModel;
+use app\repositories\OperationRepository;
 use app\services\ExportService;
 use app\services\FinancierService;
+use app\services\OperationStatusService;
 use yii\base\DynamicModel;
 use yii\data\ActiveDataProvider;
 use yii\db\Query;
 use yii\filters\AccessControl;
-use yii\web\Controller;
 use yii\web\BadRequestHttpException;
+use yii\web\Controller;
 
 class FinancierController extends Controller
 {
     public const REPLENISHMENT = 'replenishment';
     public const DISCHARGE = 'discharge';
 
-    private FinancierService $service;
-    private ExportService $exportService;
+    /** @var FinancierService */
+    private $service;
 
-    public function __construct($id, $module, $config, FinancierService $financierService, ExportService $exportService)
-    {
+    /** @var ExportService */
+    private $exportService;
+
+    /** @var OperationStatusService */
+    private $operationStatusService;
+
+    /** @var OperationRepository */
+    private $operationRepository;
+
+    public function __construct(
+        $id,
+        $module,
+        $config,
+        FinancierService $financierService,
+        ExportService $exportService,
+        OperationStatusService $operationStatusService,
+        OperationRepository $operationRepository
+    ) {
         $this->service = $financierService;
         $this->exportService = $exportService;
+        $this->operationStatusService = $operationStatusService;
+        $this->operationRepository = $operationRepository;
         parent::__construct($id, $module, $config);
     }
 
@@ -55,7 +75,6 @@ class FinancierController extends Controller
         $model = new OperationForm();
         $query = OperationModel::getQuery();
 
-        \Yii::$app->getHomeUrl();
         if (\Yii::$app->request->isPost) {
             if ($model->load(\Yii::$app->request->post()) && $model->validate()) {
                 $query = (new OperationModel())->search($model->attributes);
@@ -82,7 +101,7 @@ class FinancierController extends Controller
             }
         }
 
-        $page = (int)\Yii::$app->request->post('page', 1);
+        $page = (int) \Yii::$app->request->post('page', 1);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -112,59 +131,32 @@ class FinancierController extends Controller
 
         if (!$model->validate()) {
             \Yii::$app->session->setFlash('error', 'Некорректные данные');
+
             return $this->redirect('operation?sort=-id');
         }
 
-        $operations_ids = array_filter(array_map('trim', explode(',', $model->operations_ids)));
-        $result = [];
-
-        foreach ($operations_ids as $oper) {
-            $operation = OperationModel::find()->where(['ext_id' => $oper])->one();
-            if (!$operation) {
-                $result[] = sprintf('%s - %s', $oper, 'Операция не найдена');
-                continue;
-            }
-            if ($operation->amount < 150) {
-                $result[] = sprintf('%s - %s', $oper, 'Сумма меньше 150');
-                continue;
-            }
-            try {
-                $status = $operation->changeStatus($operation->id);
-                $result[] = sprintf('%s - %s', $oper, $status > 0 ? 'Success' : $status);
-            } catch (\Throwable $e) {
-                $result[] = sprintf('%s - %s', $oper, 'Ошибка');
-            }
-        }
+        $operationsIds = array_filter(array_map('trim', explode(',', $model->operations_ids)));
+        $result = $this->operationStatusService->changeBulk($operationsIds);
 
         \Yii::$app->session->setFlash('success', implode('<br>', $result));
+
         return $this->redirect('operation?sort=-id');
     }
 
     public function actionChangeStatus($id)
     {
-        $id = (int)$id;
-        $operation = OperationModel::findOne(['id' => $id]);
-        if (!$operation) {
+        $id = (int) $id;
+        $operation = $this->operationRepository->findById($id);
+        if ($operation === null) {
             throw new BadRequestHttpException('Операция не найдена');
         }
 
         try {
-            $operation->changeStatus($id);
+            $this->operationRepository->changeStatus($id);
             \Yii::$app->session->setFlash('success', \Yii::t('manual/cabinet', 'success'));
         } catch (\Exception $e) {
             \Yii::$app->session->setFlash('error', 'error');
         }
-
-        $query = OperationModel::getQuery();
-        $page = (int)\Yii::$app->request->post('page', 1);
-
-        $dataProvider = new ActiveDataProvider([
-            'query' => $query->asArray(),
-            'pagination' => [
-                'page' => max($page - 1, 0),
-                'pageSize' => 20,
-            ],
-        ]);
 
         return $this->redirect(['financier/operation', 'sort' => '-id']);
     }
@@ -188,15 +180,18 @@ class FinancierController extends Controller
             $data = \Yii::$app->request->post();
             if ($model->load($data) && $model->validate()) {
                 try {
-                    $this->service->createOperation($data, (int)$id, OperationModel::TYPE_CASHIN, self::REPLENISHMENT);
+                    $this->service->createOperation($data, (int) $id, OperationModel::TYPE_CASHIN, self::REPLENISHMENT);
                     \Yii::$app->session->setFlash('success', \Yii::t('manual/cabinet', 'success'));
+
                     return $this->redirect(['financier/agents']);
                 } catch (\Exception $e) {
                     \Yii::$app->session->setFlash('error', 'error');
+
                     return $this->redirect(['financier/agents']);
                 }
             }
         }
+
         return $this->renderAjax('/financier/agents/_form', ['model' => $model]);
     }
 
@@ -206,23 +201,27 @@ class FinancierController extends Controller
         if (\Yii::$app->request->isPost && $model->load(\Yii::$app->request->post()) && $model->validate()) {
             try {
                 $data = \Yii::$app->request->post();
-                $this->service->createOperation($data, (int)$id, OperationModel::TYPE_CASHOUT, self::DISCHARGE);
+                $this->service->createOperation($data, (int) $id, OperationModel::TYPE_CASHOUT, self::DISCHARGE);
                 \Yii::$app->session->setFlash('success', \Yii::t('manual/cabinet', 'success'));
+
                 return $this->redirect(['financier/agents']);
             } catch (\Exception $e) {
                 \Yii::$app->session->setFlash('error', 'error');
+
                 return $this->redirect(['financier/agents']);
             }
         }
+
         return $this->renderAjax('/financier/agents/_form', ['model' => $model]);
     }
 
-    public function actionExport(string $format)
+    public function actionExport($format)
     {
         $model = new OperationForm();
         $query = OperationModel::getQuery();
 
         if (\Yii::$app->request->isPost && $model->load(\Yii::$app->request->post()) && $model->validate()) {
+            $query = (new OperationModel())->search($model->attributes);
         }
 
         $dataProvider = new ActiveDataProvider([
@@ -235,9 +234,13 @@ class FinancierController extends Controller
         return $this->redirect(['financier/operation?sort=-id']);
     }
 
-    private function dataProvider(Query $query): ActiveDataProvider
+    /**
+     * @param Query $query
+     * @return ActiveDataProvider
+     */
+    private function dataProvider($query)
     {
-        $page = (int)\Yii::$app->request->post('page', 1);
+        $page = (int) \Yii::$app->request->post('page', 1);
 
         return new ActiveDataProvider([
             'query' => $query,

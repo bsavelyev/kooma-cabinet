@@ -5,11 +5,13 @@ namespace app\controllers;
 use app\helpers\ExcelParser;
 use app\helpers\QiwiServiceSaver;
 use app\helpers\ServiceSaver;
-use app\models\FeesModel;
 use app\models\ServiceModel;
 use app\models\ServiceProviderFieldsModel;
 use app\models\ServiceProviderFieldsValidationModel;
 use app\models\ServiceProviderModel;
+use app\repositories\ServiceProviderFieldsRepository;
+use app\services\ServiceCatalogService;
+use app\services\ServiceProviderService;
 use yii\base\DynamicModel;
 use yii\data\ActiveDataProvider;
 use yii\filters\AccessControl;
@@ -18,6 +20,27 @@ use yii\web\UploadedFile;
 
 class ModeratorController extends Controller
 {
+    /** @var ServiceProviderService */
+    private $serviceProviderService;
+    /** @var ServiceCatalogService */
+    private $serviceCatalogService;
+    /** @var ServiceProviderFieldsRepository */
+    private $fieldsRepository;
+
+    public function __construct(
+        $id,
+        $module,
+        $config,
+        ServiceProviderService $serviceProviderService,
+        ServiceCatalogService $serviceCatalogService,
+        ServiceProviderFieldsRepository $fieldsRepository
+    ) {
+        $this->serviceProviderService = $serviceProviderService;
+        $this->serviceCatalogService = $serviceCatalogService;
+        $this->fieldsRepository = $fieldsRepository;
+        parent::__construct($id, $module, $config);
+    }
+
     public function behaviors()
     {
         return [
@@ -147,38 +170,14 @@ class ModeratorController extends Controller
 
     public function actionDeleteServiceProvider(int $id)
     {
-        $providerModel = new ServiceProviderModel();
-        $providerModel = $providerModel->findOne(['id' => $id]);
-
-        $providerModelFields = new ServiceProviderFieldsModel();
-        $providerModelFields = $providerModelFields->findAll(['service_provider_id' => $providerModel->id ?? null]);
-
-        foreach ($providerModelFields as $field) {
-            $validation = new ServiceProviderFieldsValidationModel();
-            $validation = $validation->findAll(['service_provider_field_id' => $field->id ?? null]);
-
-            if (!empty($validation[0]->attributes['id'])) {
-                ServiceProviderFieldsValidationModel::deleteAll(['service_provider_field_id' => $field->id]);
-            }
-        }
-
         try {
-            if (!empty($providerModelFields[0]->attributes['id'])) {
-                ServiceProviderFieldsModel::deleteAll(['service_provider_id' => $providerModel->id]);
-            }
-
-            if (!empty($providerModel->attributes['id'])) {
-                $providerModel->delete();
-            }
-
+            $this->serviceProviderService->delete($id);
             \Yii::$app->session->setFlash('success', \Yii::t('manual/cabinet', 'success'));
-
-            return $this->redirect(['moderator/service-provider']);
-        } catch (\Exception $ex) {
-            $this->renderAjax('serviceProvider/_form', ['model' => $providerModel]);
+        } catch (\Throwable $exception) {
+            \Yii::$app->session->setFlash('error', $exception->getMessage());
         }
 
-        return $this->renderAjax('serviceProvider/_form', ['model' => $providerModel]);
+        return $this->redirect(['moderator/service-provider']);
     }
 
     public function actionUpdateServiceProvider($id)
@@ -219,63 +218,20 @@ class ModeratorController extends Controller
 
     public function actionDeleteService($id)
     {
-        $service = ServiceModel::findOne(['id' => $id]);
-
-        $providerModel = new ServiceProviderModel();
-        $providerModel = $providerModel->findOne(['service_id' => $id]);
-
-        $feesModel = new FeesModel();
-        $feesModel = $feesModel->findAll(['service_id' => $id]);
-
-        $providerModelFields = new ServiceProviderFieldsModel();
-        $providerModelFields = $providerModelFields->findAll(['service_provider_id' => $providerModel->id ?? null]);
-
-        foreach ($providerModelFields as $field) {
-            $validation = new ServiceProviderFieldsValidationModel();
-            $validation = $validation->findAll(['service_provider_field_id' => $field->id ?? null]);
-
-            if (!empty($validation[0]->attributes['id'])) {
-                ServiceProviderFieldsValidationModel::deleteAll(['service_provider_field_id' => $field->id]);
-            }
-        }
-
         try {
-            if (!empty($providerModelFields[0]->attributes['id'])) {
-                ServiceProviderFieldsModel::deleteAll(['service_provider_id' => $providerModel->id]);
-            }
-
-            if (!empty($feesModel[0]->attributes['id'])) {
-                FeesModel::deleteAll(['service_id' => $id]);
-            }
-
-            if (!empty($providerModel->attributes['id'])) {
-                $providerModel->delete();
-            }
-
-            if ($service) {
-                $response = $service->delete();
-            }
-
+            $this->serviceCatalogService->delete((int) $id);
             \Yii::$app->session->setFlash('success', \Yii::t('manual/cabinet', 'success'));
-
-            return $this->redirect(['moderator/index']);
-        } catch (\Exception $exception) {
+        } catch (\Throwable $exception) {
             \Yii::$app->session->setFlash('error', \Yii::t('manual/cabinet', $exception->getMessage()));
-
-            return $this->redirect(['moderator/index']);
         }
+
+        return $this->redirect(['moderator/index']);
     }
 
     public function actionFields($id)
     {
         $dataProvider = new ActiveDataProvider([
-            'query' => ServiceProviderFieldsModel::find()
-                ->select('service_provider_fields.*')
-                ->from('kooma.service')
-                ->innerJoin('kooma.service_provider', 'kooma.service_provider.service_id = kooma.service.id')
-                ->innerJoin('kooma.service_provider_fields', 'kooma.service_provider_fields.service_provider_id = kooma.service_provider.id')
-                ->where(['kooma.service_provider.id' => $id])
-                ->orderBy('id'),
+            'query' => $this->fieldsRepository->getFieldsQueryByProviderId((int) $id),
         ]);
 
         return $this->render('service/Fields', ['dataProvider' => $dataProvider, 'id' => $id]);

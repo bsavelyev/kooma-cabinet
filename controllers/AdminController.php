@@ -6,6 +6,8 @@ use app\models\AssignmentModel;
 use app\models\forms\PermissionForm;
 use app\models\forms\RbacForm;
 use app\models\User;
+use app\services\RbacService;
+use app\services\RoleAssignmentService;
 use Yii;
 use yii\data\ActiveDataProvider;
 use yii\web\Controller;
@@ -13,6 +15,24 @@ use yii\web\Response;
 
 class AdminController extends Controller
 {
+    /** @var RbacService */
+    private $rbacService;
+
+    /** @var RoleAssignmentService */
+    private $roleAssignmentService;
+
+    public function __construct(
+        $id,
+        $module,
+        $config,
+        RbacService $rbacService,
+        RoleAssignmentService $roleAssignmentService
+    ) {
+        $this->rbacService = $rbacService;
+        $this->roleAssignmentService = $roleAssignmentService;
+        parent::__construct($id, $module, $config);
+    }
+
     public function behaviors()
     {
         return [
@@ -79,10 +99,9 @@ class AdminController extends Controller
         if (Yii::$app->request->post()) {
             $model = new AssignmentModel();
             $model->load(Yii::$app->request->post());
-            $model->setAttribute('user_id', $id);
-            $model->validate();
-            $model->save();
+            $this->roleAssignmentService->assignRole((int) $id, $model->item_name);
             $this->setSuccessFlash();
+
             return $this->redirect(['index']);
         }
         $model = new AssignmentModel();
@@ -128,35 +147,20 @@ class AdminController extends Controller
      */
     public function actionSetPermissions($name)
     {
-        $model = new PermissionForm();
-        $data = RbacForm::find()
-            ->select(['auth_item.name', 'kooma.auth_item_child.parent'])
-            ->innerJoin('kooma.auth_item_child', 'kooma.auth_item_child.child = kooma.auth_item.name')
-            ->where(['type' => 2])
-            ->asArray()
-            ->all();
+        $permissionData = $this->rbacService->buildPermissionForm($name);
+        $model = $permissionData['form'];
 
         if ($model->load(Yii::$app->request->post()) && $model->validate()) {
-            $permissions = array_map(fn ($permission) => [$name, $permission], $model->child);
-            $model->multipleSave($permissions);
+            $children = is_array($model->child) ? $model->child : [];
+            $this->rbacService->saveRolePermissions($name, $children);
             $this->setSuccessFlash();
+
             return $this->redirect(['admin/rbac']);
         }
 
-        $selected = [];
-        $permissions = [];
-        foreach ($data as $permission) {
-            $permissions[$permission['name']] = $permission['name'];
-            if ($permission['parent'] === $name) {
-                $selected[] = $permission['name'];
-            }
-        }
-
-        $model->child = $selected;
-
         return $this->renderAjax('rbac/_permissions', [
             'model' => $model,
-            'permissions' => $permissions,
+            'permissions' => $permissionData['permissions'],
         ]);
     }
 
