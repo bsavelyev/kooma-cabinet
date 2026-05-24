@@ -16,6 +16,14 @@ class RbacService
     }
 
     /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getRolesQuery()
+    {
+        return $this->repository->findRolesQuery();
+    }
+
+    /**
      * @param string $roleName
      * @return array{form: PermissionForm, permissions: array<string, string>}
      */

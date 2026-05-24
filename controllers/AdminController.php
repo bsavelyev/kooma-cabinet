@@ -3,8 +3,8 @@
 namespace app\controllers;
 
 use app\models\AssignmentModel;
+use app\models\AuthItemModel;
 use app\models\forms\PermissionForm;
-use app\models\forms\RbacForm;
 use app\models\User;
 use app\services\RbacService;
 use app\services\RoleAssignmentService;
@@ -44,7 +44,7 @@ class AdminController extends Controller
                         'roles' => ['administrator'],
                     ],
                 ],
-            ]
+            ],
         ];
     }
 
@@ -55,6 +55,7 @@ class AdminController extends Controller
             'query' => User::find()->orderBy(['id' => SORT_DESC]),
             'sort' => false,
         ]);
+
         return $this->render('subject/index', ['dataProvider' => $dataProvider, 'model' => $model]);
     }
 
@@ -63,8 +64,10 @@ class AdminController extends Controller
         $user = new User();
         if ($user->load(Yii::$app->request->post()) && $user->save()) {
             $this->setSuccessFlash();
+
             return $this->redirect(['index']);
         }
+
         return $this->renderAjax('subject/_form', ['model' => $user]);
     }
 
@@ -74,8 +77,10 @@ class AdminController extends Controller
         $model->setScenario(User::SCENARIO_UPDATE);
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             $this->setSuccessFlash();
+
             return $this->redirect(['index']);
         }
+
         return $this->renderAjax('subject/_formUpdate', ['model' => $model]);
     }
 
@@ -84,8 +89,10 @@ class AdminController extends Controller
         $model = User::findOne(['id' => $id]);
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             $this->setSuccessFlash();
+
             return $this->redirect(['subject/index']);
         }
+
         return $this->renderAjax('subject/_changePassword', ['model' => $model]);
     }
 
@@ -95,7 +102,6 @@ class AdminController extends Controller
      */
     public function actionChangeRoles($id)
     {
-        $model = AssignmentModel::findOne(['user_id' => $id]);
         if (Yii::$app->request->post()) {
             $model = new AssignmentModel();
             $model->load(Yii::$app->request->post());
@@ -104,40 +110,47 @@ class AdminController extends Controller
 
             return $this->redirect(['index']);
         }
+
         $model = new AssignmentModel();
+
         return $this->renderAjax('subject/_changeRoles', [
             'model' => $model,
-            'id' => $id
+            'id' => $id,
         ]);
     }
 
     public function actionRbac()
     {
-        $model = new RbacForm();
+        $model = new AuthItemModel();
         $dataProvider = new ActiveDataProvider([
-            'query' => RbacForm::find()->where(['type' => 1])->orderBy('name'),
+            'query' => $this->rbacService->getRolesQuery(),
             'sort' => false,
         ]);
+
         return $this->render('rbac/index', ['dataProvider' => $dataProvider, 'model' => $model]);
     }
 
     public function actionCreateRbac()
     {
-        $rbac = new RbacForm();
-        if ($rbac->load(Yii::$app->request->post()) && $rbac->save()) {
+        $model = new AuthItemModel();
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
             $this->setSuccessFlash();
+
             return $this->redirect(['admin/rbac']);
         }
-        return $this->renderAjax('rbac/_form', ['model' => $rbac]);
+
+        return $this->renderAjax('rbac/_form', ['model' => $model]);
     }
 
     public function actionUpdateRbac($name)
     {
-        $model = RbacForm::findOne(['name' => $name]);
+        $model = AuthItemModel::findOne(['name' => $name]);
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             $this->setSuccessFlash();
+
             return $this->redirect(['admin/rbac']);
         }
+
         return $this->renderAjax('rbac/_form', ['model' => $model]);
     }
 
@@ -148,6 +161,7 @@ class AdminController extends Controller
     public function actionSetPermissions($name)
     {
         $permissionData = $this->rbacService->buildPermissionForm($name);
+        /** @var PermissionForm $model */
         $model = $permissionData['form'];
 
         if ($model->load(Yii::$app->request->post()) && $model->validate()) {

@@ -2,23 +2,35 @@
 
 namespace app\repositories;
 
-use app\models\forms\RbacForm;
+use app\enum\RBACTypeEnum;
+use app\models\AuthItemModel;
 use Yii;
+use yii\db\ActiveQuery;
 
 class RbacRepository
 {
+    /**
+     * @return ActiveQuery
+     */
+    public function findRolesQuery()
+    {
+        return AuthItemModel::find()
+            ->where(['type' => RBACTypeEnum::ROLE])
+            ->orderBy('name');
+    }
+
     /**
      * @return array[]
      */
     public function findPermissionsWithParents()
     {
-        return RbacForm::find()
+        return AuthItemModel::find()
             ->select(['auth_item.name', 'kooma.auth_item_child.parent'])
             ->innerJoin(
                 'kooma.auth_item_child',
                 'kooma.auth_item_child.child = kooma.auth_item.name'
             )
-            ->where(['type' => 2])
+            ->where(['type' => RBACTypeEnum::PERMISSION])
             ->asArray()
             ->all();
     }

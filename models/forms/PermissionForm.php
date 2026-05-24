@@ -2,30 +2,27 @@
 
 namespace app\models\forms;
 
-use yii\db\ActiveRecord;
+use yii\base\Model;
 
 /**
- * Permission model
- *
- * @property string $parent
- * @property string|array $child
+ * Форма назначения permissions роли.
  */
-class PermissionForm extends ActiveRecord
+class PermissionForm extends Model
 {
-    public static function tableName()
-    {
-        return 'kooma.auth_item_child';
-    }
+    /** @var string[] */
+    public $child = [];
 
     public function rules()
     {
         return [
-            [['parent', 'child'], 'safe']
+            [['child'], 'safe'],
         ];
     }
 
-    public function multipleSave($childes): void
+    public function attributeLabels()
     {
-        \Yii::$app->db->createCommand()->batchInsert(PermissionForm::tableName(), $this->attributes(), $childes)->execute();
+        return [
+            'child' => 'Permissions',
+        ];
     }
 }
